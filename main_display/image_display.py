@@ -9,7 +9,7 @@ class ImageDisplay(tk.Canvas):
         self.zoom_factor = 1.0
 
         self.bind('<MouseWheel>', parent.zoom_image)
-        self.bind('<ButtonPress-1>', parent.on_button_press)
+        self.bind('<ButtonPress-1>', parent.on_mouse_press)
         self.bind('<B1-Motion>', parent.on_move_press)
 
 class CloseImage(ctk.CTkButton):

@@ -3,6 +3,7 @@ from global_imports import *
 from file.import_image import ImageImport
 from main_display.image_display import ImageDisplay, CloseImage
 from main_display.action_bar import ActionBar
+from layers import Layers
 
 class App(ctk.CTk):
     def __init__(self):
@@ -38,26 +39,6 @@ class App(ctk.CTk):
 
         self.mainloop()
 
-    def zoom_image(self, event):
-        # Adjust zoom factor based on mouse wheel scroll
-        if event.delta > 0:
-            zoom_delta = 1.1  # Zoom in
-        elif event.delta < 0:
-            zoom_delta = 0.9  # Zoom out
-        else:
-            return
-
-        # Calculate new zoom factor
-        new_zoom_factor = self.zoom_factor * zoom_delta
-
-        # Limit the zoom factor to prevent excessive zooming
-        new_zoom_factor = max(0.1, min(new_zoom_factor, 10))
-        # Update zoom factor
-        self.zoom_factor = new_zoom_factor
-
-        # Update the image
-        self.draw_image()
-
     def draw_image(self):
         self.image_output.delete('all')
         image = gv.IMAGES[gv.ACTIVE_INDEX].get_display_image()
@@ -78,7 +59,9 @@ class App(ctk.CTk):
         self.empty_workspace_frame.grid_forget()
         self.image_output = ImageDisplay(self)
         self.close_button = CloseImage(self, self.close_edit)
-        self.action_bar = ActionBar()
+        self.layers = Layers()
+
+        self.action_bar = ActionBar(self)
         self.draw_image()
 
     def close_edit(self):
@@ -88,12 +71,35 @@ class App(ctk.CTk):
         if len(gv.IMAGES) == 0:
             self.close_button.destroy()
             self.image_output.destroy()
+            if self.action_bar.child:
+                self.action_bar.child.close()
             self.action_bar.destroy()
+            self.layers.destroy()
             self.empty_workspace_frame.grid(column=0, columnspan=2, row=0, sticky='nsew')
         else:
             self.draw_image()
 
-    def on_button_press(self, event):
+    def zoom_image(self, event):
+        # Adjust zoom factor based on mouse wheel scroll
+        if event.delta > 0:
+            zoom_delta = 1.1  # Zoom in
+        elif event.delta < 0:
+            zoom_delta = 0.9  # Zoom out
+        else:
+            return
+
+        # Calculate new zoom factor
+        new_zoom_factor = self.zoom_factor * zoom_delta
+
+        # Limit the zoom factor to prevent excessive zooming
+        new_zoom_factor = max(0.1, min(new_zoom_factor, 10))
+        # Update zoom factor
+        self.zoom_factor = new_zoom_factor
+
+        # Update the image
+        self.draw_image()
+
+    def on_mouse_press(self, event):
         self.last_x = event.x
         self.last_y = event.y
 

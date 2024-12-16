@@ -14,4 +14,4 @@ LIGHT_GREY = '#808782'
 IMAGES = []
 HISTORY = []
 ACTIVE_INDEX = 0
-ALLOW_EDIT_WINDOW_OPEN = True
+allow_edit_window_open = True
