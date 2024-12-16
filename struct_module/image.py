@@ -33,6 +33,15 @@ class ImageW:
     def create_new_layer(self):
         pass
 
+    def get_active_layer_index(self) -> int:
+        return self.__active_layer_index
+
+    def get_current_layer_image(self) -> np.array:
+        return self.layers[self.__active_layer_index].image
+
+    def set_current_layer_image(self, image: np.array):
+        self.layers[self.__active_layer_index].image = image
+
     def get_display_image(self) -> Image:
         if not self.layers[self.__active_layer_index].enable:
             compressed_layers_image = merge_layers(self.__top_layers, self.__transparent_alpha_layer, self.__bottom_layers)
