@@ -81,6 +81,7 @@ class App(ctk.CTk):
                 self.action_bar.child.close()
             self.action_bar.destroy()
             self.layers.destroy()
+            self.history.destroy()
             self.empty_workspace_frame.grid(column=0, columnspan=2, row=0, sticky='nsew')
         else:
             self.draw_image()

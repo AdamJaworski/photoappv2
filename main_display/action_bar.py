@@ -1,6 +1,7 @@
 from global_imports import *
 import global_variables as gv
 from color.hsv import Hsv
+from color.rgb import Rgb
 
 class ActionBar(ctk.CTkToplevel):
     def __init__(self, parent):
@@ -75,7 +76,7 @@ class ActionBar(ctk.CTkToplevel):
             case 'HSV':
                 self.child = Hsv(self.draw_function, self.after_image_operation_apply)
             case 'RGB':
-                pass
+                self.child = Rgb(self.draw_function, self.after_image_operation_apply)
             case 'Brightness/Contrast':
                 pass
 
