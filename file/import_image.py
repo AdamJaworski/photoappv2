@@ -29,7 +29,6 @@ class ImageImport(ctk.CTkToplevel):
 
         # append image to workplace
         gv.IMAGES.append(ImageW('background', image, 'BGRA'))
-        gv.HISTORY.append([])
 
         # on import func to refresh gui
         self.close()

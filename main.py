@@ -4,6 +4,7 @@ from file.import_image import ImageImport
 from main_display.image_display import ImageDisplay, CloseImage
 from main_display.action_bar import ActionBar
 from layers import Layers
+from history import History
 
 class App(ctk.CTk):
     def __init__(self):
@@ -39,6 +40,11 @@ class App(ctk.CTk):
 
         self.mainloop()
 
+    def after_image_operation_apply(self):
+        """Call this function after applying operation to image e.g. HSV"""
+        self.layers.refresh_active_layer_image()
+        self.history.refresh_history()
+
     def draw_image(self):
         self.image_output.delete('all')
         image = gv.IMAGES[gv.ACTIVE_INDEX].get_display_image()
@@ -60,12 +66,12 @@ class App(ctk.CTk):
         self.image_output = ImageDisplay(self)
         self.close_button = CloseImage(self, self.close_edit)
         self.layers = Layers()
+        self.history = History()
 
         self.action_bar = ActionBar(self)
         self.draw_image()
 
     def close_edit(self):
-        gv.HISTORY.remove(gv.HISTORY[gv.ACTIVE_INDEX])
         gv.IMAGES.remove(gv.IMAGES[gv.ACTIVE_INDEX])
 
         if len(gv.IMAGES) == 0:

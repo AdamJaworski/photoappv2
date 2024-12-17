@@ -3,7 +3,7 @@ import global_variables as gv
 
 class Hsv(ctk.CTkToplevel):
     """Hue Saturation Value"""
-    def __init__(self, draw_image_func, refresh_current_layer_image_func):
+    def __init__(self, draw_image_func, on_apply_func):
         super().__init__()
         eof_main_width = int(self.winfo_screenwidth() / 2 + self.winfo_screenwidth() / 3.4)
         eof_main_height = int(self.winfo_screenheight() / 2 - self.winfo_screenheight() / 3)
@@ -13,7 +13,7 @@ class Hsv(ctk.CTkToplevel):
         self.resizable(False, False)
 
         self.draw_image = draw_image_func
-        self.refresh_current_layer_image_func = refresh_current_layer_image_func
+        self.on_apply_func = on_apply_func
 
         self.image_on_open = gv.IMAGES[gv.ACTIVE_INDEX].get_current_layer_image()
 
@@ -53,7 +53,8 @@ class Hsv(ctk.CTkToplevel):
     def __on_apply(self):
         self.preview.set(True)
         self.__on_value_change()
-        self.refresh_current_layer_image_func()
+        gv.IMAGES[gv.ACTIVE_INDEX].save_history_state('HSV')
+        self.on_apply_func()
         self.close()
 
     def __on_cancel(self):

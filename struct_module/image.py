@@ -3,6 +3,7 @@ from global_imports import *
 
 class ImageW:
     layers: list
+    history: list
     ratio: float
     size: tuple
 
@@ -14,15 +15,25 @@ class ImageW:
 
         self.original_size = (image.shape[0], image.shape[1])
         self.original_image = image.copy()
+        self.original_colorspace = colorspace
 
         self.layers = []
-        self.layers.append(Layer(layer_name, image, colorspace))
+        self.layers.append(Layer(layer_name, image, colorspace, 0))
+        self.next_layer_id = 1
+
+        self.history = []
+        self.history.append(History('open', self.original_image, self.layers[0]))
+
         self.ratio = image.shape[0] / image.shape[1]
         self.size = (image.shape[0], image.shape[1])
 
         self.__recalculate_dummy_alpha()
         self.__compress_top_layers()
         self.__compress_bottom_layers()
+
+    def save_history_state(self, operation_name: str):
+        """Adds state to history"""
+        self.history.append(History(operation_name, self.get_current_layer_image(), self.layers[self.__active_layer_index]))
 
     def change_active_layer(self, new_index):
         """Change active layer func is required to recalculate compressed layers above and bellow it"""
@@ -34,7 +45,10 @@ class ImageW:
 
     def create_new_layer(self):
         """Adding layer will require compress layers to be recalculated"""
-        pass
+        self.layers.append(Layer(f'Layer {self.next_layer_id}', self.original_image, self.original_colorspace, self.next_layer_id))
+        self.next_layer_id += 1
+
+        raise NotImplementedError
 
     def get_active_layer_index(self) -> int:
         """Returns active layer index of ImageW instance, required for some external operations like layers"""
@@ -77,13 +91,23 @@ class Layer:
     image: np.array
     colorspace: str
     enable: bool
+    id: int
 
-    def __init__(self, layer_name, image, colorspace):
+    def __init__(self, layer_name, image, colorspace, id_int):
         self.original_image = image.copy()
         self.name = layer_name
         self.image = image
         self.colorspace = colorspace
+        self.id = id_int
         self.enable = True
+
+
+class History:
+    """History saves image after operation"""
+    def __init__(self, name, image, layer):
+        self.name = f'{layer.name}:  {name}'
+        self.layer_id = layer.id
+        self.state = image
 
 @njit
 def merge_layers(top_layer, mid_layer, bottom_layer):

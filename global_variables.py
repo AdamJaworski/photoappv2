@@ -15,6 +15,5 @@ IMAGES = []
 """List of open in project images (ImageW)"""
 ACTIVE_INDEX = 0
 """Index of currently open ImageW in workspace """
-HISTORY = []
 allow_edit_window_open = True
 """Bool that prevents multiple operations to take place on single image """
