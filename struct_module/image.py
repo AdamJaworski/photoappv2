@@ -61,6 +61,7 @@ class ImageW:
         self.layers[self.__active_layer_index].image = image
 
     def get_display_image(self) -> Image:
+        return self.layers[self.__active_layer_index].image
         if not self.layers[self.__active_layer_index].enable:
             compressed_layers_image = merge_layers(self.__top_layers, self.__transparent_alpha_layer, self.__bottom_layers)
         else:
