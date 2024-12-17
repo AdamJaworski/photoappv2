@@ -10,6 +10,10 @@ BACKGROUND_LIGHT = '#3b3b3b'
 DARK_BLUE = '#6E8898'
 LIGHT_GREY = '#808782'
 
+BUTTON_TEXT   = '#f4f3ee'
+BUTTON_HOVER  = '#797367'
+BUTTON_BORDER = '#3D3D3D'
+
 # workspace variables
 IMAGES = []
 """List of open in project images (ImageW)"""

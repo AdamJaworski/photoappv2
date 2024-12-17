@@ -13,7 +13,7 @@ class ActionBar(ctk.CTkToplevel):
         center_x = int(self.winfo_screenwidth() / 2 - int(self.winfo_screenwidth() / 1.7) / 2)
         y_offset = int(self.winfo_screenheight() / 10)
         self.y_height = int(self.winfo_screenheight() / 30)
-        self.x_width = int(self.winfo_screenwidth() / 1.7)
+        self.x_width = int(self.winfo_screenwidth() / 2.7)
         self.geometry(f'{self.x_width}x{self.y_height}+{center_x}+{y_offset}')
 
         self.child = None
@@ -35,7 +35,7 @@ class ActionBar(ctk.CTkToplevel):
     def create_tab(self, command, values, keyword):
         tab = ctk.CTkOptionMenu(self,
                                 height=int(self.y_height * 0.9),
-                                width=int(self.x_width / 10),
+                                width=int(self.x_width / 5),
                                 values=values,
                                 command=lambda x : command(tab, keyword, x),
                                 hover=True,

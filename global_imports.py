@@ -7,5 +7,8 @@ import time
 from numba import njit
 from PIL import ImageTk, Image
 from pillow_heif import register_heif_opener
+from struct_module.button import Button
+from struct_module.slider import Slider
+
 
 register_heif_opener()

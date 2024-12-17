@@ -37,14 +37,24 @@ class Hsv(ctk.CTkToplevel):
         self.v.trace_add('write', self.__on_value_change)
         self.preview.trace_add('write', self.__on_preview_change)
 
-        ctk.CTkSlider(self, width=350, height=20, variable=self.h, from_=-100, to=100).pack(pady=7)
-        ctk.CTkSlider(self, width=350, height=20, variable=self.s, from_=-100, to=100).pack(pady=7)
-        ctk.CTkSlider(self, width=350, height=20, variable=self.v, from_=-100, to=100).pack(pady=7)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=1)
 
-        ctk.CTkCheckBox(self, height=25, text='Preview', variable=self.preview).pack()
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
 
-        ctk.CTkButton(self, text="Apply", command=self.__on_apply).pack(pady=10)
-        ctk.CTkButton(self, text="Cancel", command=self.__on_cancel).pack()
+        Slider(self, variable=self.h, s_range=(-100, 100)).grid(row=0, column=0, columnspan=3, padx=10, pady=(10,0), sticky='nsew')
+        Slider(self, variable=self.s, s_range=(-100, 100)).grid(row=1, column=0, columnspan=3, padx=10, pady=(10,0), sticky='nsew')
+        Slider(self, variable=self.v, s_range=(-100, 100)).grid(row=2, column=0, columnspan=3, padx=10, pady=(10,0), sticky='nsew')
+
+        ctk.CTkCheckBox(self, height=25, text='Preview', variable=self.preview).grid(row=3, column=1, columnspan=1, padx=10, pady=(10,0), sticky='nsew')
+
+        Button(self, text="Apply",  command=self.__on_apply) .grid(row=4, column=0, columnspan=1, padx=10, pady=10, sticky='nsew')
+        Button(self, text="Cancel", command=self.__on_cancel).grid(row=4, column=2, columnspan=1, padx=10, pady=10, sticky='nsew')
 
     def close(self):
         self.destroy()
