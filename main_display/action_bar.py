@@ -6,6 +6,7 @@ class ActionBar(ctk.CTkToplevel):
     def __init__(self, parent):
         super().__init__(fg_color=gv.BACKGROUND_DARK)
         self.draw_function = parent.draw_image
+        self.refresh_current_layer_image_func = parent.layers.refresh_active_layer_image
 
         # Geometry
         center_x = int(self.winfo_screenwidth() / 2 - int(self.winfo_screenwidth() / 1.7) / 2)
@@ -72,7 +73,7 @@ class ActionBar(ctk.CTkToplevel):
 
         match choice:
             case 'HSV':
-                self.child = Hsv(self.draw_function)
+                self.child = Hsv(self.draw_function, self.refresh_current_layer_image_func)
             case 'RGB':
                 pass
             case 'Brightness/Contrast':

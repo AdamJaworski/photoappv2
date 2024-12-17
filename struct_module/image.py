@@ -25,15 +25,19 @@ class ImageW:
         self.__compress_bottom_layers()
 
     def change_active_layer(self, new_index):
+        """Change active layer func is required to recalculate compressed layers above and bellow it"""
         pass
 
     def change_layer_visibility(self, index):
+        """Changing visibility , based on index of the layer will require to recalculate compressed layers"""
         pass
 
     def create_new_layer(self):
+        """Adding layer will require compress layers to be recalculated"""
         pass
 
     def get_active_layer_index(self) -> int:
+        """Returns active layer index of ImageW instance, required for some external operations like layers"""
         return self.__active_layer_index
 
     def get_current_layer_image(self) -> np.array:
