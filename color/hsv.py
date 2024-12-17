@@ -1,10 +1,9 @@
-import numpy as np
-
 from global_imports import *
 import global_variables as gv
 
 class Hsv(ctk.CTkToplevel):
-    def __init__(self, draw_image_func):
+    """Hue Saturation Value"""
+    def __init__(self, draw_image_func, refresh_current_layer_image_func):
         super().__init__()
         eof_main_width = int(self.winfo_screenwidth() / 2 + self.winfo_screenwidth() / 3.4)
         eof_main_height = int(self.winfo_screenheight() / 2 - self.winfo_screenheight() / 3)
@@ -14,6 +13,7 @@ class Hsv(ctk.CTkToplevel):
         self.resizable(False, False)
 
         self.draw_image = draw_image_func
+        self.refresh_current_layer_image_func = refresh_current_layer_image_func
 
         self.image_on_open = gv.IMAGES[gv.ACTIVE_INDEX].get_current_layer_image()
 
@@ -21,6 +21,7 @@ class Hsv(ctk.CTkToplevel):
 
         self.h_channel, self.s_channel, self.v_channel = cv2.split(cv2.cvtColor(self.image_on_open, cv2.COLOR_BGR2HSV))
 
+        # NumPy cant dynamically change type, so adding over 255 or subtracting below 0 would run into error
         self.h_channel = self.h_channel.astype(np.int16)
         self.s_channel = self.s_channel.astype(np.int16)
         self.v_channel = self.v_channel.astype(np.int16)
@@ -52,6 +53,7 @@ class Hsv(ctk.CTkToplevel):
     def __on_apply(self):
         self.preview.set(True)
         self.__on_value_change()
+        self.refresh_current_layer_image_func()
         self.close()
 
     def __on_cancel(self):
@@ -68,7 +70,9 @@ class Hsv(ctk.CTkToplevel):
         s_channel = (self.s_channel + self.s.get())
         v_channel = (self.v_channel + self.v.get())
 
+        # clipping at 0, 255 prevents values below 0 to jump back to uint8 max
         image = np.clip(cv2.merge([h_channel, s_channel, v_channel]), 0, 255).astype(np.uint8)
+        # cvtColor requires correct datatype (uint8) so its required to first change type
         image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
         image[:, :, 3] = self.alpha
