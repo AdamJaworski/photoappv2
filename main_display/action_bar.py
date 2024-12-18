@@ -3,9 +3,10 @@ import global_variables as gv
 from color.hsv import Hsv
 from color.rgb import Rgb
 
-class ActionBar(ctk.CTkToplevel):
+class ActionBar(ctk.CTkFrame):
     def __init__(self, parent):
-        super().__init__(fg_color=gv.BACKGROUND_DARK)
+        super().__init__(parent, fg_color=gv.BACKGROUND_DARK)
+        self.parent = parent
         self.draw_function = parent.draw_image
         self.after_image_operation_apply = parent.after_image_operation_apply
 
@@ -14,14 +15,14 @@ class ActionBar(ctk.CTkToplevel):
         y_offset = int(self.winfo_screenheight() / 10)
         self.y_height = int(self.winfo_screenheight() / 30)
         self.x_width = int(self.winfo_screenwidth() / 2.7)
-        self.geometry(f'{self.x_width}x{self.y_height}+{center_x}+{y_offset}')
+        # self.geometry(f'{self.x_width}x{self.y_height}+{center_x}+{y_offset}')
 
         self.child = None
 
-        self.title("")
-        self.overrideredirect(False)
-        self.protocol("WM_DELETE_WINDOW", self.disable_event)
-        self.resizable(False, False)
+        # self.title("")
+        # self.overrideredirect(False)
+        # self.protocol("WM_DELETE_WINDOW", self.disable_event)
+        # self.resizable(False, False)
 
         self.create_tab(self.file, ["Open", "Save", "Save as..", "Close", "Settings"], 'File')
         self.create_tab(self.image, ["Resize"], 'Image')
@@ -29,6 +30,7 @@ class ActionBar(ctk.CTkToplevel):
         self.create_tab(self.filter_f, ["Blur", "Canny", "Vignette"], 'Filter')
         self.create_tab(self.view, ["Fit on screen", "Reset viewport"], 'View')
 
+        self.grid(row=0, column=0, sticky='nsew')
     def disable_event(self):
         pass
 
@@ -74,9 +76,9 @@ class ActionBar(ctk.CTkToplevel):
 
         match choice:
             case 'HSV':
-                self.child = Hsv(self.draw_function, self.after_image_operation_apply)
+                self.child = Hsv(self.parent, self.draw_function, self.after_image_operation_apply)
             case 'RGB':
-                self.child = Rgb(self.draw_function, self.after_image_operation_apply)
+                self.child = Rgb(self.parent, self.draw_function, self.after_image_operation_apply)
             case 'Brightness/Contrast':
                 pass
 

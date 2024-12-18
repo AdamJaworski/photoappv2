@@ -3,12 +3,14 @@ import global_variables as gv
 
 class Rgb(ctk.CTkToplevel):
     """Red Green Blue"""
-    def __init__(self, draw_image_func, on_apply_func):
+    def __init__(self, parent, draw_image_func, on_apply_func):
         super().__init__()
+        self.transient(parent)
+
         eof_main_width = int(self.winfo_screenwidth() / 2 + self.winfo_screenwidth() / 3.4)
         eof_main_height = int(self.winfo_screenheight() / 2 - self.winfo_screenheight() / 3)
-        self.geometry(f"360x220+{eof_main_width + 10}+{eof_main_height}")
-        self.title("HSV")
+        self.geometry(f"360x250+{eof_main_width + 10}+{eof_main_height}")
+        self.title("RGB")
         self.protocol("WM_DELETE_WINDOW", self.__on_cancel)
         self.resizable(False, False)
 
@@ -35,14 +37,24 @@ class Rgb(ctk.CTkToplevel):
         self.b.trace_add('write', self.__on_value_change)
         self.preview.trace_add('write', self.__on_preview_change)
 
-        ctk.CTkSlider(self, width=350, height=20, variable=self.b, from_=-100, to=100).pack(pady=7)
-        ctk.CTkSlider(self, width=350, height=20, variable=self.g, from_=-100, to=100).pack(pady=7)
-        ctk.CTkSlider(self, width=350, height=20, variable=self.r, from_=-100, to=100).pack(pady=7)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=1)
 
-        ctk.CTkCheckBox(self, height=25, text='Preview', variable=self.preview).pack()
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
 
-        ctk.CTkButton(self, text="Apply", command=self.__on_apply).pack(pady=10)
-        ctk.CTkButton(self, text="Cancel", command=self.__on_cancel).pack()
+        LabeledSlider(self, text='Red', variable=self.b, s_range=(-100, 100)).grid(row=0, column=0, columnspan=3, padx=10, sticky='nsew')
+        LabeledSlider(self, text='Green', variable=self.g, s_range=(-100, 100)).grid(row=1, column=0, columnspan=3, padx=10, sticky='nsew')
+        LabeledSlider(self, text='Blue', variable=self.r, s_range=(-100, 100)).grid(row=2, column=0, columnspan=3, padx=10, sticky='nsew')
+
+        ctk.CTkCheckBox(self, height=25, text='Preview', variable=self.preview).grid(row=3, column=1, columnspan=1, padx=10, pady=(10,0), sticky='nsew')
+
+        Button(self, text="Cancel", command=self.__on_cancel).grid(row=4, column=0, columnspan=1, padx=10, pady=10, sticky='nsew')
+        Button(self, text="Apply", command=self.__on_apply).grid(row=4, column=2, columnspan=1, padx=10, pady=10, sticky='nsew')
 
     def close(self):
         self.destroy()

@@ -9,6 +9,7 @@ from PIL import ImageTk, Image
 from pillow_heif import register_heif_opener
 from struct_module.button import Button
 from struct_module.slider import Slider
+from struct_module.labeled_slider import LabeledSlider
 
 
 register_heif_opener()

@@ -2,8 +2,10 @@ from global_imports import *
 import global_variables as gv
 
 class History(ctk.CTkToplevel):
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__()
+        self.transient(parent)
+
         eof_main_width = int(self.winfo_screenwidth() / 2 + self.winfo_screenwidth() / 3.4)
         eof_main_height = int(self.winfo_screenheight() / 2 + self.winfo_screenheight() / 3)
         self.geometry(f"220x220+{int((self.winfo_screenwidth() - eof_main_width) / 2.5)}+{eof_main_height - 220}")

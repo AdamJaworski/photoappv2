@@ -1,5 +1,3 @@
-import cv2
-
 import global_variables as gv
 from global_imports import *
 from file.import_image import ImageImport
@@ -27,6 +25,7 @@ class App(ctk.CTk):
 
         self.geometry(f'{int(self.winfo_screenwidth() / 1.7)}x{int(self.winfo_screenheight() / 1.5)}+{center_x}+{center_y}')
 
+
         ctk.set_appearance_mode('dark')
         self.title('Image Editor')
 
@@ -36,11 +35,16 @@ class App(ctk.CTk):
 
         # Empty frame
         self.empty_workspace_frame = ctk.CTkFrame(self)
-        self.empty_workspace_frame.grid(sticky='nsew')
+        self.empty_workspace_frame.grid(rowspan=2, sticky='nsew')
 
         ctk.CTkButton(self.empty_workspace_frame, text='Open Image', command=lambda: ImageImport(self.on_first_image)).pack(expand=True)
 
+        self.bind('<Configure>', self.test)
         self.mainloop()
+
+    def test(self, event):
+        minsize = self.winfo_height() - 0.9 * int(self.winfo_screenheight() / 30) - 5
+        self.grid_rowconfigure(1, weight=1, minsize=minsize)
 
     def after_image_operation_apply(self):
         """Call this function after applying operation to image e.g. HSV"""
@@ -54,7 +58,9 @@ class App(ctk.CTk):
         new_w = int(gv.IMAGES[gv.ACTIVE_INDEX].size[0] * self.zoom_factor)
         new_h = int(gv.IMAGES[gv.ACTIVE_INDEX].size[1] * self.zoom_factor)
 
-        image = cv2.resize(image, (new_h, new_w), interpolation=cv2.INTER_AREA)
+        interpolation = cv2.INTER_AREA if self.zoom_factor < 1 else cv2.INTER_LINEAR
+
+        image = cv2.resize(image, (new_h, new_w), interpolation=interpolation)
 
         self.imagetk = ImageTk.PhotoImage(Image.fromarray(image))
         self.image_output.create_image(self.image_x, self.image_y, image=self.imagetk, anchor='center')
@@ -65,10 +71,11 @@ class App(ctk.CTk):
 
     def on_first_image(self):
         self.empty_workspace_frame.grid_forget()
+
         self.image_output = ImageDisplay(self)
         self.close_button = CloseImage(self, self.close_edit)
-        self.layers = Layers()
-        self.history = History()
+        self.layers = Layers(self)
+        self.history = History(self)
 
         self.action_bar = ActionBar(self)
         self.draw_image()
@@ -84,7 +91,7 @@ class App(ctk.CTk):
             self.action_bar.destroy()
             self.layers.destroy()
             self.history.destroy()
-            self.empty_workspace_frame.grid(column=0, columnspan=2, row=0, sticky='nsew')
+            self.empty_workspace_frame.grid(column=0, columnspan=2, row=0, rowspan=2, sticky='nsew')
         else:
             self.draw_image()
 
