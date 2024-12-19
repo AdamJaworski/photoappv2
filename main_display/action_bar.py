@@ -3,6 +3,7 @@ import global_variables as gv
 from color.hsv import Hsv
 from color.rgb import Rgb
 from color.bc import BrightnessContrast
+from filter.canny import Canny
 
 class ActionBar(ctk.CTkFrame):
     def __init__(self, parent):
@@ -91,9 +92,11 @@ class ActionBar(ctk.CTkFrame):
             case 'Blur':
                 pass
             case 'Canny':
-                pass
+                self.child = Canny(self.parent, self.draw_function, self.after_image_operation_apply)
             case 'Vignette':
                 pass
+
+        gv.allow_edit_window_open = False
 
     def view(self, tab, title, choice):
         tab.set(title)

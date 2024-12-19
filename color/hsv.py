@@ -82,7 +82,7 @@ class Hsv(ctk.CTkToplevel):
         if not self.preview.get():
             return
 
-        h_channel = (self.h_channel + self.h.get())
+        h_channel = np.clip(self.h_channel + self.h.get(), 0, 179)
         s_channel = (self.s_channel + self.s.get())
         v_channel = (self.v_channel + self.v.get())
 
