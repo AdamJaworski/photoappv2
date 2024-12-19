@@ -17,7 +17,6 @@ class History(ctk.CTkToplevel):
         self.history_frames = []
         self.refresh_history()
 
-
     def refresh_history(self):
         for frame in self.history_frames:
             frame.destroy()

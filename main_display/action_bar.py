@@ -2,6 +2,7 @@ from global_imports import *
 import global_variables as gv
 from color.hsv import Hsv
 from color.rgb import Rgb
+from color.bc import BrightnessContrast
 
 class ActionBar(ctk.CTkFrame):
     def __init__(self, parent):
@@ -58,7 +59,7 @@ class ActionBar(ctk.CTkFrame):
             case 'Save as..':
                 pass
             case 'Close':
-                pass
+                self.parent.close_edit()
             case 'Settings':
                 pass
 
@@ -80,7 +81,7 @@ class ActionBar(ctk.CTkFrame):
             case 'RGB':
                 self.child = Rgb(self.parent, self.draw_function, self.after_image_operation_apply)
             case 'Brightness/Contrast':
-                pass
+                self.child = BrightnessContrast(self.parent, self.draw_function, self.after_image_operation_apply)
 
         gv.allow_edit_window_open = False
 

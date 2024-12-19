@@ -1,7 +1,7 @@
 import global_variables as gv
 from global_imports import *
 from file.import_image import ImageImport
-from main_display.image_display import ImageDisplay, CloseImage
+from main_display.image_display import ImageDisplay
 from main_display.action_bar import ActionBar
 from layers import Layers
 from history import History
@@ -25,7 +25,6 @@ class App(ctk.CTk):
 
         self.geometry(f'{int(self.winfo_screenwidth() / 1.7)}x{int(self.winfo_screenheight() / 1.5)}+{center_x}+{center_y}')
 
-
         ctk.set_appearance_mode('dark')
         self.title('Image Editor')
 
@@ -39,10 +38,11 @@ class App(ctk.CTk):
 
         ctk.CTkButton(self.empty_workspace_frame, text='Open Image', command=lambda: ImageImport(self.on_first_image)).pack(expand=True)
 
-        self.bind('<Configure>', self.test)
+        self.bind('<Configure>', self.resize_grid)
         self.mainloop()
 
-    def test(self, event):
+
+    def resize_grid(self, event):
         minsize = self.winfo_height() - 0.9 * int(self.winfo_screenheight() / 30) - 5
         self.grid_rowconfigure(1, weight=1, minsize=minsize)
 
@@ -52,6 +52,7 @@ class App(ctk.CTk):
         self.history.refresh_history()
 
     def draw_image(self):
+        """Function need to render"""
         self.image_output.delete('all')
         image = gv.IMAGES[gv.ACTIVE_INDEX].get_display_image()
 
@@ -73,7 +74,6 @@ class App(ctk.CTk):
         self.empty_workspace_frame.grid_forget()
 
         self.image_output = ImageDisplay(self)
-        self.close_button = CloseImage(self, self.close_edit)
         self.layers = Layers(self)
         self.history = History(self)
 
@@ -84,7 +84,6 @@ class App(ctk.CTk):
         gv.IMAGES.remove(gv.IMAGES[gv.ACTIVE_INDEX])
 
         if len(gv.IMAGES) == 0:
-            self.close_button.destroy()
             self.image_output.destroy()
             if self.action_bar.child:
                 self.action_bar.child.close()

@@ -1,3 +1,5 @@
+import time
+
 from global_imports import *
 import global_variables as gv
 
@@ -57,6 +59,7 @@ class Hsv(ctk.CTkToplevel):
 
         Button(self, text="Cancel", command=self.__on_cancel).grid(row=4, column=0, columnspan=1, padx=10, pady=10, sticky='nsew')
         Button(self, text="Apply", command=self.__on_apply).grid(row=4, column=2, columnspan=1, padx=10, pady=10, sticky='nsew')
+
 
     def close(self):
         self.destroy()
