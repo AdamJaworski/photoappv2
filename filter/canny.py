@@ -1,6 +1,3 @@
-import cv2
-import numpy as np
-
 from global_imports import *
 import global_variables as gv
 
