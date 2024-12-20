@@ -1,5 +1,3 @@
-import cv2
-
 from global_imports import *
 import global_variables as gv
 
@@ -14,6 +12,7 @@ class Layers(ctk.CTkToplevel):
         self.title("Layers")
         self.protocol("WM_DELETE_WINDOW", None)
         self.resizable(False, True)
+        self.grid_columnconfigure(0, weight=1)
 
         self.inter = cv2.INTER_AREA
 
@@ -22,11 +21,9 @@ class Layers(ctk.CTkToplevel):
         self.alpha = []
         self.canvas_list = []
         self.canvas_list_alpha = []
-        self.__refresh_layers()
+        self.refresh_layers()
 
-
-
-    def __refresh_layers(self):
+    def refresh_layers(self):
         self.images = []
         """Required to store instances of images in layer canvas - without it GC would remove image"""
         self.alpha = []
@@ -35,20 +32,22 @@ class Layers(ctk.CTkToplevel):
         for frame in self.layer_frames:
             frame.destroy()
 
-        for i in range(len(gv.IMAGES[gv.ACTIVE_INDEX].layers)):
-            self.grid_columnconfigure(i, weight=1)
-            frame = ctk.CTkFrame(self, fg_color=gv.DARK_BLUE, height=50)
-            frame.grid(row=0, column=i, padx=10, pady=10, sticky="ew")
+        self.layer_frames = []
 
-            frame.grid_rowconfigure(0, weight=1)
-            frame.grid_columnconfigure(0, weight=1)
-            frame.grid_columnconfigure(1, weight=1)
-            frame.grid_columnconfigure(2, weight=1)
+        for i in range(len(gv.IMAGES[gv.ACTIVE_INDEX].layers)):
+            self.grid_rowconfigure(i, weight=0)
+            frame = ctk.CTkFrame(self, fg_color=gv.DARK_BLUE, height=50)
+            frame.grid(row=i, column=0, padx=10, pady=(5,0), sticky="nwe")
 
             new_w, new_h = self.__get_height_n_width()
 
+            frame.grid_rowconfigure(0, weight=1)
+            frame.grid_columnconfigure(0, weight=0, minsize=(20 + new_w))
+            frame.grid_columnconfigure(1, weight=0, minsize=(20 + new_w))
+            frame.grid_columnconfigure(2, weight=1)
+
             canvas = tk.Canvas(master=frame, width=new_w, height=new_h, bd=0, highlightthickness=0, relief='ridge', background=gv.DARK_BLUE)
-            canvas.grid(row=0, column=0,padx=(20,0), pady=5)
+            canvas.grid(row=0, column=0,padx=(20,5), pady=5)
 
             canvas2 = tk.Canvas(master=frame, width=new_w, height=new_h, bd=0, highlightthickness=0, relief='ridge', background=gv.DARK_BLUE)
             canvas2.grid(row=0, column=1,padx=(0,20), pady=5)
@@ -72,6 +71,7 @@ class Layers(ctk.CTkToplevel):
             label.grid(row=0, column=3, padx=20, pady=5)
 
             self.layer_frames.append(frame)
+
 
         self.layer_frames[gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index()].configure(fg_color=gv.LIGHT_GREY)
 

@@ -1,12 +1,10 @@
-import time
-
 import global_variables as gv
 from global_imports import *
 from file.import_image import ImageImport
 from main_display.image_display import ImageDisplay
 from main_display.action_bar import ActionBar
-from layers import Layers
-from history import History
+from main_display.layers import Layers
+from main_display.history import History
 
 class App(ctk.CTk):
     def __init__(self):

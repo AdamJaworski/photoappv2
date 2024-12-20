@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 
 import global_variables as gv
@@ -51,7 +50,7 @@ class ImageW:
         self.layers.append(Layer(f'Layer {self.next_layer_id}', self.original_image, self.original_colorspace, self.next_layer_id))
         self.next_layer_id += 1
 
-        raise NotImplementedError
+        self.__compress_bottom_layers()
 
     def get_active_layer_index(self) -> int:
         """Returns active layer index of ImageW instance, required for some external operations like layers"""
@@ -79,6 +78,8 @@ class ImageW:
     def __compress_bottom_layers(self):
         if self.__active_layer_index == len(self.layers) - 1:
             self.__bottom_layers = self.__transparent_alpha_layer
+        else:
+            self.__bottom_layers = collapse_layers(self.layers[self.__active_layer_index + 1:])
 
     def __recalculate_dummy_alpha(self):
         __transparent_alpha = np.zeros((self.size[0], self.size[1]), dtype=gv.DATA_TYPE)
@@ -113,6 +114,25 @@ class History:
         self.layer_id = layer.id
         self.state = image
 
+
+def collapse_layers(layer_list: list):
+    if len(layer_list) == 0:
+        raise RuntimeError("Got empty list as input")
+
+    if len(layer_list) == 1:
+        return layer_list[0].image
+
+    out_im = np.zeros((layer_list[0].image.shape[0], layer_list[0].image.shape[1], 4), dtype=np.float64)
+    total_alpha = np.zeros((layer_list[0].image.shape[0], layer_list[0].image.shape[1]), dtype=np.float64)
+    for layer in layer_list:
+      alpha = np.clip(layer.image[:, :, 3].astype(np.float64)/255 - total_alpha, 0, 1)
+      alpha_per_channel = cv2.merge([alpha, alpha, alpha])
+      out_im[:, :, :3] += (layer.image[:, :, :3] / 255) * alpha_per_channel
+      total_alpha += alpha
+
+    out_im[:, :, 3] = total_alpha
+
+    return np.clip(out_im * 255, 0, 255).astype(np.uint8)
 
 @njit
 def merge_layers(top_layer, mid_layer, bottom_layer):

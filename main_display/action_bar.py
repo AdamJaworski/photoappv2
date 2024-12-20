@@ -1,9 +1,9 @@
 from global_imports import *
 import global_variables as gv
-from color.hsv import Hsv
-from color.rgb import Rgb
-from color.bc import BrightnessContrast
+from color import Hsv, BrightnessContrast, Rgb
 from filter.canny import Canny
+from alpha.fill import Fill
+from layers import create_new_layer
 
 class ActionBar(ctk.CTkFrame):
     def __init__(self, parent):
@@ -31,7 +31,8 @@ class ActionBar(ctk.CTkFrame):
         self.create_tab(self.color, ["HSV", "RGB", "Brightness/Contrast"], 'Color')
         self.create_tab(self.filter_f, ["Blur", "Canny", "Vignette"], 'Filter')
         self.create_tab(self.view, ["Fit on screen", "Reset viewport"], 'View')
-        self.create_tab(self.alpha, ["Fill white", "Fill black", "Edit mask"], 'Alpha')
+        self.create_tab(self.alpha, ["Fill", "Edit mask"], 'Alpha')
+        self.create_tab(self.layers, ["Create new layer"], 'Layers')
 
         self.grid(row=0, column=0, sticky='nsew')
     def disable_event(self):
@@ -89,6 +90,9 @@ class ActionBar(ctk.CTkFrame):
 
     def filter_f(self, tab, title, choice):
         tab.set(title)
+        if not gv.allow_edit_window_open:
+            return
+
         match choice:
             case 'Blur':
                 pass
@@ -101,6 +105,9 @@ class ActionBar(ctk.CTkFrame):
 
     def view(self, tab, title, choice):
         tab.set(title)
+        if not gv.allow_edit_window_open:
+            return
+
         match choice:
             case 'Fit on screen':
                 pass
@@ -109,8 +116,24 @@ class ActionBar(ctk.CTkFrame):
 
     def alpha(self, tab, title, choice):
         tab.set(title)
+        if not gv.allow_edit_window_open:
+            return
+
         match choice:
-            case 'Fit on screen':
-                pass
-            case 'Reset viewport':
-                pass
+            case 'Fill':
+                self.child = Fill(self.parent, self.draw_function, self.after_image_operation_apply)
+            case 'Edit mask':
+                self.child = Fill(self.parent, self.draw_function, self.after_image_operation_apply)
+
+        gv.allow_edit_window_open = False
+
+    def layers(self, tab, title, choice):
+        tab.set(title)
+        if not gv.allow_edit_window_open:
+            return
+
+        match choice:
+            case 'Create new layer':
+                self.child = create_new_layer(self.parent, self.draw_function, self.after_image_operation_apply)
+            case 'Edit mask':
+                self.child = Fill(self.parent, self.draw_function, self.after_image_operation_apply)
