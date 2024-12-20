@@ -54,7 +54,7 @@ class Canny(ctk.CTkToplevel):
         ctk.CTkCheckBox(self, height=25, text='Invert', variable=self.invert).grid(row=2, column=2, columnspan=1, padx=10, pady=(10,0), sticky='nsew')
 
         Button(self, text="Cancel", command=self.__on_cancel).grid(row=3, column=0, columnspan=1, padx=10, pady=10, sticky='nsew')
-        Button(self, text="Apply as a mask", command=self.__on_mask_apply).grid(row=3, column=1, columnspan=1, padx=10, pady=10, sticky='nsew')
+        Button(self, text="Apply as an alpha", command=self.__on_mask_apply).grid(row=3, column=1, columnspan=1, padx=10, pady=10, sticky='nsew')
         Button(self, text="Apply", command=self.__on_apply).grid(row=3, column=2, columnspan=1, padx=10, pady=10, sticky='nsew')
 
         self.__on_value_change()

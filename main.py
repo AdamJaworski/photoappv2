@@ -1,3 +1,5 @@
+import time
+
 import global_variables as gv
 from global_imports import *
 from file.import_image import ImageImport
@@ -53,8 +55,13 @@ class App(ctk.CTk):
 
     def draw_image(self):
         """Function need to render"""
+        #print('\n', '='*40)
+        start = time.time()
         self.image_output.delete('all')
         image = gv.IMAGES[gv.ACTIVE_INDEX].get_display_image()
+
+        #print(f'Get display: {time.time() - start}')
+        start = time.time()
 
         new_w = int(gv.IMAGES[gv.ACTIVE_INDEX].size[0] * self.zoom_factor)
         new_h = int(gv.IMAGES[gv.ACTIVE_INDEX].size[1] * self.zoom_factor)
@@ -63,8 +70,14 @@ class App(ctk.CTk):
 
         image = cv2.resize(image, (new_h, new_w), interpolation=interpolation)
 
+        #print(f'Resize: {time.time() - start}')
+        start = time.time()
+
         self.imagetk = ImageTk.PhotoImage(Image.fromarray(image))
         self.image_output.create_image(self.image_x, self.image_y, image=self.imagetk, anchor='center')
+
+        #print(f'Draw: {time.time() - start}')
+        #print('=' * 40)
 
     def move_image(self):
         self.image_output.delete('all')

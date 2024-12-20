@@ -1,3 +1,6 @@
+import cv2
+import numpy as np
+
 import global_variables as gv
 from global_imports import *
 
@@ -66,6 +69,7 @@ class ImageW:
         else:
             compressed_layers_image = merge_layers(self.__top_layers, self.layers[self.__active_layer_index].image, self.__bottom_layers)
 
+        compressed_layers_image[:, :, 3] = np.clip(compressed_layers_image[:, :, 3].astype(np.int16) + 1, 0, 255)
         return compressed_layers_image.astype(gv.DATA_TYPE)
 
     def __compress_top_layers(self):
@@ -108,6 +112,7 @@ class History:
         self.name = f'{layer.name}:  {name}'
         self.layer_id = layer.id
         self.state = image
+
 
 @njit
 def merge_layers(top_layer, mid_layer, bottom_layer):

@@ -31,6 +31,7 @@ class ActionBar(ctk.CTkFrame):
         self.create_tab(self.color, ["HSV", "RGB", "Brightness/Contrast"], 'Color')
         self.create_tab(self.filter_f, ["Blur", "Canny", "Vignette"], 'Filter')
         self.create_tab(self.view, ["Fit on screen", "Reset viewport"], 'View')
+        self.create_tab(self.alpha, ["Fill white", "Fill black", "Edit mask"], 'Alpha')
 
         self.grid(row=0, column=0, sticky='nsew')
     def disable_event(self):
@@ -99,6 +100,14 @@ class ActionBar(ctk.CTkFrame):
         gv.allow_edit_window_open = False
 
     def view(self, tab, title, choice):
+        tab.set(title)
+        match choice:
+            case 'Fit on screen':
+                pass
+            case 'Reset viewport':
+                pass
+
+    def alpha(self, tab, title, choice):
         tab.set(title)
         match choice:
             case 'Fit on screen':
