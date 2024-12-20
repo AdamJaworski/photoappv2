@@ -39,7 +39,9 @@ class ImageW:
 
     def change_active_layer(self, new_index):
         """Change active layer func is required to recalculate compressed layers above and bellow it"""
-        pass
+        self.__active_layer_index = new_index
+        self.__compress_top_layers()
+        self.__compress_bottom_layers()
 
     def change_layer_visibility(self, index):
         """Changing visibility , based on index of the layer will require to recalculate compressed layers"""
@@ -72,10 +74,14 @@ class ImageW:
         return compressed_layers_image.astype(gv.DATA_TYPE)
 
     def __compress_top_layers(self):
+        """Pre compress layers before drawing to speed up multilayer workflow"""
         if self.__active_layer_index == 0:
             self.__top_layers = self.__transparent_alpha_layer
+        else:
+            self.__top_layers = collapse_layers(self.layers[:self.__active_layer_index])
 
     def __compress_bottom_layers(self):
+        """Pre compress layers before drawing to speed up multilayer workflow"""
         if self.__active_layer_index == len(self.layers) - 1:
             self.__bottom_layers = self.__transparent_alpha_layer
         else:

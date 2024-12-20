@@ -37,6 +37,8 @@ class Layers(ctk.CTkToplevel):
         for i in range(len(gv.IMAGES[gv.ACTIVE_INDEX].layers)):
             self.grid_rowconfigure(i, weight=0)
             frame = ctk.CTkFrame(self, fg_color=gv.DARK_BLUE, height=50)
+
+            frame.bind("<Button-1>", lambda e, idx=i: self.__change_active_layer(idx))
             frame.grid(row=i, column=0, padx=10, pady=(5,0), sticky="nwe")
 
             new_w, new_h = self.__get_height_n_width()
@@ -73,6 +75,13 @@ class Layers(ctk.CTkToplevel):
             self.layer_frames.append(frame)
 
 
+        self.layer_frames[gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index()].configure(fg_color=gv.LIGHT_GREY)
+
+    def __change_active_layer(self, index):
+        if index == gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index():
+            return
+        self.layer_frames[gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index()].configure(fg_color=gv.DARK_BLUE)
+        gv.IMAGES[gv.ACTIVE_INDEX].change_active_layer(index)
         self.layer_frames[gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index()].configure(fg_color=gv.LIGHT_GREY)
 
     def refresh_active_layer_image(self):
