@@ -33,6 +33,7 @@ class ActionBar(ctk.CTkFrame):
         self.create_tab(self.view, ["Fit on screen", "Reset viewport"], 'View')
         self.create_tab(self.alpha, ["Fill", "Edit mask"], 'Alpha')
         self.create_tab(self.layers, ["Create new layer"], 'Layers')
+        self.create_tab(self.debug, ["Debug"], 'Debug')
 
         self.grid(row=0, column=0, sticky='nsew')
     def disable_event(self):
@@ -137,3 +138,7 @@ class ActionBar(ctk.CTkFrame):
                 self.child = create_new_layer(self.parent, self.draw_function, self.after_image_operation_apply)
             case 'Edit mask':
                 self.child = Fill(self.parent, self.draw_function, self.after_image_operation_apply)
+    
+    def debug(self, tab, title, choice):
+        tab.set(title)
+        gv.IMAGES[gv.ACTIVE_INDEX].debug()

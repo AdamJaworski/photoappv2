@@ -68,9 +68,8 @@ class ImageW:
         if not self.layers[self.__active_layer_index].enable:
             compressed_layers_image = merge_layers(self.__top_layers, self.__transparent_alpha_layer, self.__bottom_layers)
         else:
-            compressed_layers_image = merge_layers(self.__top_layers, self.layers[self.__active_layer_index].image, self.__bottom_layers)
+            compressed_layers_image = merge_layers(self.__top_layers, self.get_current_layer_image(), self.__bottom_layers)
 
-        compressed_layers_image[:, :, 3] = np.clip(compressed_layers_image[:, :, 3].astype(np.int16) + 1, 0, 255)
         return compressed_layers_image.astype(gv.DATA_TYPE)
 
     def __compress_top_layers(self):
@@ -80,6 +79,8 @@ class ImageW:
         else:
             self.__top_layers = collapse_layers(self.layers[:self.__active_layer_index])
 
+        self.__top_layers = np.ascontiguousarray(self.__top_layers)
+
     def __compress_bottom_layers(self):
         """Pre compress layers before drawing to speed up multilayer workflow"""
         if self.__active_layer_index == len(self.layers) - 1:
@@ -87,15 +88,23 @@ class ImageW:
         else:
             self.__bottom_layers = collapse_layers(self.layers[self.__active_layer_index + 1:])
 
+        self.__bottom_layers = np.ascontiguousarray(self.__bottom_layers)
+
     def __recalculate_dummy_alpha(self):
         __transparent_alpha = np.zeros((self.size[0], self.size[1]), dtype=gv.DATA_TYPE)
-        self.__transparent_alpha_layer = cv2.merge([__transparent_alpha, __transparent_alpha, __transparent_alpha, __transparent_alpha])
+        self.__transparent_alpha_layer = np.ascontiguousarray(cv2.merge([__transparent_alpha, __transparent_alpha, __transparent_alpha, __transparent_alpha]))
 
     def resize(self, new_size: tuple, interpolation):
         self.size = new_size
         for layer in self.layers:
             layer.image = cv2.resize(layer.original_image, new_size[::-1], interpolation=interpolation)
         self.__recalculate_dummy_alpha()
+    
+    def debug(self):
+        cv2.imshow('top_layer', self.__top_layers)
+        cv2.imshow('mid_layer', self.get_current_layer_image())
+        cv2.imshow('bottom_layer', self.__bottom_layers)
+
 
 class Layer:
     name: str
@@ -122,95 +131,151 @@ class History:
 
 
 def collapse_layers(layer_list: list):
+    """layer_list is list of Layers:
+        class Layer:
+            name: str
+            image: np.array
+            colorspace: str
+            enable: bool
+            id: int
+    """
     if len(layer_list) == 0:
         raise RuntimeError("Got empty list as input")
 
     if len(layer_list) == 1:
         return layer_list[0].image
 
-    out_im = np.zeros((layer_list[0].image.shape[0], layer_list[0].image.shape[1], 4), dtype=np.float64)
-    total_alpha = np.zeros((layer_list[0].image.shape[0], layer_list[0].image.shape[1]), dtype=np.float64)
-    for layer in layer_list:
-      alpha = np.clip(layer.image[:, :, 3].astype(np.float64)/255 - total_alpha, 0, 1)
-      alpha_per_channel = cv2.merge([alpha, alpha, alpha])
-      out_im[:, :, :3] += (layer.image[:, :, :3] / 255) * alpha_per_channel
-      total_alpha += alpha
+    # Initialize output image (bottom layer) and its alpha
+    out_im = layer_list[-1].image[:, :, :3].astype(np.float64) / 255
+    alpha = layer_list[-1].image[:, :, 3].astype(np.float64) / 255
 
-    out_im[:, :, 3] = total_alpha
+    # Iterate over the remaining layers from bottom to top
+    for layer in reversed(layer_list[:len(layer_list) - 1]):
+        if not layer.enable:
+            continue
 
+        # Extract top layer alpha and color
+        alpha_new = layer.image[:, :, 3].astype(np.float64) / 255
+        image = layer.image[:, :, :3].astype(np.float64) / 255
+
+        # Store old alpha before updating
+        old_alpha = alpha
+        # Compute new alpha according to alpha compositing formula
+        alpha = alpha_new + old_alpha * (1 - alpha_new)
+
+        # Compute the new composite color
+        # C_out = (C_f * α_f + C_b * α_b * (1 - α_f)) / α_out
+        out_im = (
+            image * alpha_new[:, :, None] +
+            out_im * old_alpha[:, :, None] * (1 - alpha_new[:, :, None])
+        ) / np.clip(alpha[:, :, None], 1e-8, 1.0)
+
+    # Combine the final composite color with the final alpha
+    out_im = np.dstack([out_im, alpha])
+
+    # Convert back to uint8
     return np.clip(out_im * 255, 0, 255).astype(np.uint8)
 
-@njit
-def merge_layers(top_layer, mid_layer, bottom_layer):
-    h, w, _ = top_layer.shape
-    output = np.zeros((h, w, 4), dtype=np.uint8)
+@njit(fastmath=True, parallel=True)
+def merge_layers(foreground, mid_layer, background):
+    """
+    Merge three RGBA layers (foreground over mid_layer over background)
+    using Porter-Duff 'over' in one pass, in a Numba-accelerated loop.
 
-    for i in range(h):
+    Parameters
+    ----------
+    foreground : np.ndarray, shape (H, W, 4), dtype=uint8
+    mid_layer  : np.ndarray, shape (H, W, 4), dtype=uint8
+    background : np.ndarray, shape (H, W, 4), dtype=uint8
+
+    Returns
+    -------
+    output : np.ndarray, shape (H, W, 4), dtype=uint8
+        The merged RGBA image.
+    """
+    h, w, _ = foreground.shape
+    
+    # Prepare the output array
+    output = np.empty((h, w, 4), dtype=np.uint8)
+    
+    for i in prange(h):
         for j in range(w):
-            # Initialize output color and alpha
-            C_out_r, C_out_g, C_out_b = 0.0, 0.0, 0.0
-            alpha_out = 0.0
-
-            # Process top layer
-            a1 = top_layer[i, j, 3] / 255.0
-            if a1 == 1.0:
-                # Fully opaque, no need to blend further
-                output[i, j] = top_layer[i, j]
-                continue
-            elif a1 > 0.0:
-                r1 = top_layer[i, j, 0] / 255.0
-                g1 = top_layer[i, j, 1] / 255.0
-                b1 = top_layer[i, j, 2] / 255.0
-
-                alpha_out = a1
-                C_out_r = r1
-                C_out_g = g1
-                C_out_b = b1
+            # ---------------------
+            # Load Foreground pixel
+            # ---------------------
+            fr = foreground[i, j, 0]
+            fg = foreground[i, j, 1]
+            fb = foreground[i, j, 2]
+            fa = foreground[i, j, 3]
+            
+            # ---------------------
+            # Load Mid-layer pixel
+            # ---------------------
+            mr = mid_layer[i, j, 0]
+            mg = mid_layer[i, j, 1]
+            mb = mid_layer[i, j, 2]
+            ma = mid_layer[i, j, 3]
+            
+            # ---------------------
+            # Load Background pixel
+            # ---------------------
+            br = background[i, j, 0]
+            bg_ = background[i, j, 1]
+            bb = background[i, j, 2]
+            ba = background[i, j, 3]
+            
+            # Convert to floating [0..1] to do alpha compositing
+            fr_f = fr / 255.0
+            fg_f = fg / 255.0
+            fb_f = fb / 255.0
+            fa_f = fa / 255.0
+            
+            mr_f = mr / 255.0
+            mg_f = mg / 255.0
+            mb_f = mb / 255.0
+            ma_f = ma / 255.0
+            
+            br_f = br / 255.0
+            bg_f = bg_ / 255.0
+            bb_f = bb / 255.0
+            ba_f = ba / 255.0
+            
+            # -----------------------------------------
+            # Step 1: Composite Foreground over Mid-layer
+            # -----------------------------------------
+            a_fg_mid = fa_f + ma_f * (1.0 - fa_f)
+            if a_fg_mid < 1e-8:
+                # Edge case: combined alpha is ~0
+                fg_mid_r = 0.0
+                fg_mid_g = 0.0
+                fg_mid_b = 0.0
             else:
-                pass
-
-            # Process mid layer
-            a2 = mid_layer[i, j, 3] / 255.0
-            if a2 == 1.0 and alpha_out == 0.0:
-                output[i, j] = mid_layer[i, j]
-                continue
-            elif a2 > 0.0:
-                r2 = mid_layer[i, j, 0] / 255.0
-                g2 = mid_layer[i, j, 1] / 255.0
-                b2 = mid_layer[i, j, 2] / 255.0
-
-                alpha_out_new = a2 + alpha_out * (1 - a2)
-                C_out_r = (r2 * a2 + C_out_r * alpha_out * (1 - a2)) / alpha_out_new
-                C_out_g = (g2 * a2 + C_out_g * alpha_out * (1 - a2)) / alpha_out_new
-                C_out_b = (b2 * a2 + C_out_b * alpha_out * (1 - a2)) / alpha_out_new
-                alpha_out = alpha_out_new
-
-                if alpha_out >= 1.0:
-                    output[i, j, 0] = int(C_out_r * 255)
-                    output[i, j, 1] = int(C_out_g * 255)
-                    output[i, j, 2] = int(C_out_b * 255)
-                    output[i, j, 3] = 255
-                    continue
+                inv = 1.0 / a_fg_mid
+                fg_mid_r = (fr_f * fa_f + mr_f * ma_f * (1.0 - fa_f)) * inv
+                fg_mid_g = (fg_f * fa_f + mg_f * ma_f * (1.0 - fa_f)) * inv
+                fg_mid_b = (fb_f * fa_f + mb_f * ma_f * (1.0 - fa_f)) * inv
+            
+            # -----------------------------------------
+            # Step 2: Composite (FG over Mid) over Background
+            # -----------------------------------------
+            a_out = a_fg_mid + ba_f * (1.0 - a_fg_mid)
+            if a_out < 1e-8:
+                # Edge case: final alpha is ~0
+                out_r = 0.0
+                out_g = 0.0
+                out_b = 0.0
             else:
-                pass
-
-            # Process bottom layer
-            a3 = bottom_layer[i, j, 3] / 255.0
-            if a3 > 0.0:
-                r3 = bottom_layer[i, j, 0] / 255.0
-                g3 = bottom_layer[i, j, 1] / 255.0
-                b3 = bottom_layer[i, j, 2] / 255.0
-
-                alpha_out_new = a3 + alpha_out * (1 - a3)
-                C_out_r = (r3 * a3 + C_out_r * alpha_out * (1 - a3)) / alpha_out_new
-                C_out_g = (g3 * a3 + C_out_g * alpha_out * (1 - a3)) / alpha_out_new
-                C_out_b = (b3 * a3 + C_out_b * alpha_out * (1 - a3)) / alpha_out_new
-                alpha_out = alpha_out_new
-
-            # Set the output pixel
-            output[i, j, 0] = int(C_out_r * 255)
-            output[i, j, 1] = int(C_out_g * 255)
-            output[i, j, 2] = int(C_out_b * 255)
-            output[i, j, 3] = int(alpha_out * 255)
-
+                inv_out = 1.0 / a_out
+                out_r = (fg_mid_r * a_fg_mid + br_f * ba_f * (1.0 - a_fg_mid)) * inv_out
+                out_g = (fg_mid_g * a_fg_mid + bg_f  * ba_f * (1.0 - a_fg_mid)) * inv_out
+                out_b = (fg_mid_b * a_fg_mid + bb_f  * ba_f * (1.0 - a_fg_mid)) * inv_out
+            
+            # -----------------------------------------
+            # Store in output, back to [0..255]
+            # -----------------------------------------
+            output[i, j, 0] = np.uint8(out_r * 255.0)
+            output[i, j, 1] = np.uint8(out_g * 255.0)
+            output[i, j, 2] = np.uint8(out_b * 255.0)
+            output[i, j, 3] = np.uint8(a_out * 255.0)
+    
     return output
