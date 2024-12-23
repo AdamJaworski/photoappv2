@@ -1,6 +1,6 @@
 import global_variables as gv
-from global_imports import *
 from struct_module.image import ImageW
+from global_imports import *
 
 class ImageImport(ctk.CTkToplevel):
     def __init__(self, on_import_func):
@@ -16,8 +16,8 @@ class ImageImport(ctk.CTkToplevel):
 
         ctk.CTkEntry(self, height=40, textvariable=self.url_var).pack(fill='x', pady=5, padx=5)
 
-        ctk.CTkButton(self, text="Open", command=self.open).pack(pady=10)
-        ctk.CTkButton(self, text="Find", command=self.find).pack()
+        Button(self, text="Open", command=self.open).pack(pady=10)
+        Button(self, text="Find", command=self.find).pack()
 
     def open(self):
         image = Image.open(self.url_var.get())

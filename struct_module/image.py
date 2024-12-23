@@ -30,8 +30,8 @@ class ImageW:
         self.size = (image.shape[0], image.shape[1])
 
         self.__recalculate_dummy_alpha()
-        self.__compress_top_layers()
-        self.__compress_bottom_layers()
+        self.__bake_top_layers()
+        self.__bake_bottom_layers()
 
     def save_history_state(self, operation_name: str):
         """Adds state to history"""
@@ -40,19 +40,24 @@ class ImageW:
     def change_active_layer(self, new_index):
         """Change active layer func is required to recalculate compressed layers above and bellow it"""
         self.__active_layer_index = new_index
-        self.__compress_top_layers()
-        self.__compress_bottom_layers()
+        self.__bake_top_layers()
+        self.__bake_bottom_layers()
 
     def change_layer_visibility(self, index):
         """Changing visibility , based on index of the layer will require to recalculate compressed layers"""
-        pass
+        
+        self.layers[index].enable = not self.layers[index].enable
+        if index > self.get_active_layer_index():
+            self.__bake_bottom_layers()
+        if index < self.get_active_layer_index():
+            self.__bake_top_layers()
 
     def create_new_layer(self):
         """Adding layer will require compress layers to be recalculated"""
         self.layers.append(Layer(f'Layer {self.next_layer_id}', self.original_image, self.original_colorspace, self.next_layer_id))
         self.next_layer_id += 1
 
-        self.__compress_bottom_layers()
+        self.__bake_bottom_layers()
 
     def get_active_layer_index(self) -> int:
         """Returns active layer index of ImageW instance, required for some external operations like layers"""
@@ -72,21 +77,21 @@ class ImageW:
 
         return compressed_layers_image.astype(gv.DATA_TYPE)
 
-    def __compress_top_layers(self):
+    def __bake_top_layers(self):
         """Pre compress layers before drawing to speed up multilayer workflow"""
         if self.__active_layer_index == 0:
             self.__top_layers = self.__transparent_alpha_layer
         else:
-            self.__top_layers = collapse_layers(self.layers[:self.__active_layer_index])
+            self.__top_layers = self.__collapse_layers(self.layers[:self.__active_layer_index])
 
         self.__top_layers = np.ascontiguousarray(self.__top_layers)
 
-    def __compress_bottom_layers(self):
+    def __bake_bottom_layers(self):
         """Pre compress layers before drawing to speed up multilayer workflow"""
         if self.__active_layer_index == len(self.layers) - 1:
             self.__bottom_layers = self.__transparent_alpha_layer
         else:
-            self.__bottom_layers = collapse_layers(self.layers[self.__active_layer_index + 1:])
+            self.__bottom_layers = self.__collapse_layers(self.layers[self.__active_layer_index + 1:])
 
         self.__bottom_layers = np.ascontiguousarray(self.__bottom_layers)
 
@@ -104,6 +109,52 @@ class ImageW:
         cv2.imshow('top_layer', self.__top_layers)
         cv2.imshow('mid_layer', self.get_current_layer_image())
         cv2.imshow('bottom_layer', self.__bottom_layers)
+    
+    def __collapse_layers(self, layer_list: list):
+        """layer_list is list of Layers:
+            class Layer:
+                name: str
+                image: np.array
+                colorspace: str
+                enable: bool
+                id: int
+        """
+        if len(layer_list) == 0:
+            raise RuntimeError("Got empty list as input")
+
+        if len(layer_list) == 1:
+            return layer_list[0].image if layer_list[0].enable else np.zeros_like(layer_list[0].image)
+
+        # Initialize output image (bottom layer) and its alpha
+        out_im = layer_list[-1].image[:, :, :3].astype(np.float64) / 255 if layer_list[-1].enable else np.zeros_like(layer_list[-1].image[:, :, :3])
+        alpha = layer_list[-1].image[:, :, 3].astype(np.float64) / 255 if layer_list[-1].enable else np.zeros_like(layer_list[-1].image[:, :, 3])
+
+        # Iterate over the remaining layers from bottom to top
+        for layer in reversed(layer_list[:len(layer_list) - 1]):
+            if not layer.enable:
+                continue
+
+            # Extract top layer alpha and color
+            alpha_new = layer.image[:, :, 3].astype(np.float64) / 255
+            image = layer.image[:, :, :3].astype(np.float64) / 255
+
+            # Store old alpha before updating
+            old_alpha = alpha
+            # Compute new alpha according to alpha compositing formula
+            alpha = alpha_new + old_alpha * (1 - alpha_new)
+
+            # Compute the new composite color
+            # C_out = (C_f * α_f + C_b * α_b * (1 - α_f)) / α_out
+            out_im = (
+                image * alpha_new[:, :, None] +
+                out_im * old_alpha[:, :, None] * (1 - alpha_new[:, :, None])
+            ) / np.clip(alpha[:, :, None], 1e-8, 1.0)
+
+        # Combine the final composite color with the final alpha
+        out_im = np.dstack([out_im, alpha])
+
+        # Convert back to uint8
+        return np.clip(out_im * 255, 0, 255).astype(np.uint8)
 
 
 class Layer:
@@ -121,60 +172,12 @@ class Layer:
         self.id = id_int
         self.enable = True
 
-
 class History:
     """History saves image after operation"""
     def __init__(self, name, image, layer):
         self.name = f'{layer.name}:  {name}'
         self.layer_id = layer.id
         self.state = image
-
-
-def collapse_layers(layer_list: list):
-    """layer_list is list of Layers:
-        class Layer:
-            name: str
-            image: np.array
-            colorspace: str
-            enable: bool
-            id: int
-    """
-    if len(layer_list) == 0:
-        raise RuntimeError("Got empty list as input")
-
-    if len(layer_list) == 1:
-        return layer_list[0].image
-
-    # Initialize output image (bottom layer) and its alpha
-    out_im = layer_list[-1].image[:, :, :3].astype(np.float64) / 255
-    alpha = layer_list[-1].image[:, :, 3].astype(np.float64) / 255
-
-    # Iterate over the remaining layers from bottom to top
-    for layer in reversed(layer_list[:len(layer_list) - 1]):
-        if not layer.enable:
-            continue
-
-        # Extract top layer alpha and color
-        alpha_new = layer.image[:, :, 3].astype(np.float64) / 255
-        image = layer.image[:, :, :3].astype(np.float64) / 255
-
-        # Store old alpha before updating
-        old_alpha = alpha
-        # Compute new alpha according to alpha compositing formula
-        alpha = alpha_new + old_alpha * (1 - alpha_new)
-
-        # Compute the new composite color
-        # C_out = (C_f * α_f + C_b * α_b * (1 - α_f)) / α_out
-        out_im = (
-            image * alpha_new[:, :, None] +
-            out_im * old_alpha[:, :, None] * (1 - alpha_new[:, :, None])
-        ) / np.clip(alpha[:, :, None], 1e-8, 1.0)
-
-    # Combine the final composite color with the final alpha
-    out_im = np.dstack([out_im, alpha])
-
-    # Convert back to uint8
-    return np.clip(out_im * 255, 0, 255).astype(np.uint8)
 
 @njit(fastmath=True, parallel=True)
 def merge_layers(foreground, mid_layer, background):

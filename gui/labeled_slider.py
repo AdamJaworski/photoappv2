@@ -1,6 +1,6 @@
 import customtkinter as ctk
-from struct_module.slider import Slider
-from struct_module.label import Label
+from gui.slider import Slider
+from gui.label import Label
 import global_variables as gv
 
 class LabeledSlider(ctk.CTkFrame):

@@ -36,7 +36,7 @@ class App(ctk.CTk):
         self.empty_workspace_frame = ctk.CTkFrame(self)
         self.empty_workspace_frame.grid(rowspan=2, sticky='nsew')
 
-        ctk.CTkButton(self.empty_workspace_frame, text='Open Image', command=lambda: ImageImport(self.on_first_image)).pack(expand=True)
+        Button(self.empty_workspace_frame, text='Open Image', command=lambda: ImageImport(self.on_first_image)).pack(expand=True)
 
         self.bind('<Configure>', self.resize_grid)
         self.mainloop()
@@ -53,12 +53,12 @@ class App(ctk.CTk):
 
     def draw_image(self):
         """Function need to render"""
-        print('\n', '='*40)
+        printf(f'\n{"="*40}')
         start = time.time()
         self.image_output.delete('all')
         image = gv.IMAGES[gv.ACTIVE_INDEX].get_display_image()
 
-        print(f'Get display: {time.time() - start}')
+        printf(f'Get display: {time.time() - start}')
         start = time.time()
 
         new_w = int(gv.IMAGES[gv.ACTIVE_INDEX].size[0] * self.zoom_factor)
@@ -68,14 +68,14 @@ class App(ctk.CTk):
 
         image = cv2.resize(image, (new_h, new_w), interpolation=interpolation)
 
-        print(f'Resize: {time.time() - start}')
+        printf(f'Resize: {time.time() - start}')
         start = time.time()
 
         self.imagetk = ImageTk.PhotoImage(Image.fromarray(image))
         self.image_output.create_image(self.image_x, self.image_y, image=self.imagetk, anchor='center')
 
-        print(f'Draw: {time.time() - start}')
-        print('=' * 40)
+        printf(f'Draw: {time.time() - start}')
+        printf('=' * 40)
 
     def move_image(self):
         self.image_output.delete('all')

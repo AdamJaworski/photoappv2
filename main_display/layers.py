@@ -4,6 +4,7 @@ import global_variables as gv
 class Layers(ctk.CTkToplevel):
     def __init__(self, parent):
         super().__init__()
+        self.parent = parent
         self.transient(parent)
 
         eof_main_width = int(self.winfo_screenwidth() / 2 + self.winfo_screenwidth() / 3.4)
@@ -18,6 +19,7 @@ class Layers(ctk.CTkToplevel):
 
         self.layer_frames = []
         self.images = []
+        self.labels = []
         self.alpha = []
         self.canvas_list = []
         self.canvas_list_alpha = []
@@ -27,6 +29,7 @@ class Layers(ctk.CTkToplevel):
         self.images = []
         """Required to store instances of images in layer canvas - without it GC would remove image"""
         self.alpha = []
+        self.labels = []
         self.canvas_list = []
         self.canvas_list_alpha = []
         for frame in self.layer_frames:
@@ -37,8 +40,6 @@ class Layers(ctk.CTkToplevel):
         for i in range(len(gv.IMAGES[gv.ACTIVE_INDEX].layers)):
             self.grid_rowconfigure(i, weight=0)
             frame = ctk.CTkFrame(self, fg_color=gv.DARK_BLUE, height=50)
-
-            frame.bind("<Button-1>", lambda e, idx=i: self.__change_active_layer(idx))
             frame.grid(row=i, column=0, padx=10, pady=(5,0), sticky="nwe")
 
             new_w, new_h = self.__get_height_n_width()
@@ -69,8 +70,17 @@ class Layers(ctk.CTkToplevel):
             self.canvas_list.append(canvas)
             self.canvas_list_alpha.append(canvas2)
 
-            label = ctk.CTkLabel(frame, text=gv.IMAGES[gv.ACTIVE_INDEX].layers[i].name, text_color=gv.BACKGROUND_LIGHT)
+            text =  gv.IMAGES[gv.ACTIVE_INDEX].layers[i].name
+            text_status = text + ' (hidden)' if not gv.IMAGES[gv.ACTIVE_INDEX].layers[i].enable else text + ' (shown)'
+            label = ctk.CTkLabel(frame, text=text_status, text_color=gv.BACKGROUND_LIGHT)
             label.grid(row=0, column=3, padx=20, pady=5)
+
+            self.labels.append((label, text))
+        
+            frame.bind("<Button-1>", lambda e, idx=i: self.__change_active_layer(idx))
+            frame.bind("<Button-3>", lambda e, idx=i: self.__disable_layer(idx)) 
+            label.bind("<Button-1>", lambda e, idx=i: self.__change_active_layer(idx))
+            label.bind("<Button-3>", lambda e, idx=i: self.__disable_layer(idx))
 
             self.layer_frames.append(frame)
 
@@ -78,11 +88,21 @@ class Layers(ctk.CTkToplevel):
         self.layer_frames[gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index()].configure(fg_color=gv.LIGHT_GREY)
 
     def __change_active_layer(self, index):
+        if not gv.allow_edit_window_open:
+            return
         if index == gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index():
             return
         self.layer_frames[gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index()].configure(fg_color=gv.DARK_BLUE)
         gv.IMAGES[gv.ACTIVE_INDEX].change_active_layer(index)
         self.layer_frames[gv.IMAGES[gv.ACTIVE_INDEX].get_active_layer_index()].configure(fg_color=gv.LIGHT_GREY)
+
+    def __disable_layer(self, index):
+        if not gv.allow_edit_window_open:
+            return
+        gv.IMAGES[gv.ACTIVE_INDEX].change_layer_visibility(index)
+        text_status = self.labels[index][1] + ' (hidden)' if not gv.IMAGES[gv.ACTIVE_INDEX].layers[index].enable else self.labels[index][1] + ' (shown)'
+        self.labels[index][0].configure(text=text_status)
+        self.parent.draw_image()
 
     def refresh_active_layer_image(self):
         new_w, new_h = self.__get_height_n_width()
